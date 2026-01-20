@@ -1,0 +1,37 @@
+name: Daily Stock Signal Monitor
+
+on:
+  schedule:
+    - cron: "30 21 * * 1-5"   # 美股收盘后（UTC）
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - run: pip install -r requirements.txt
+
+      - name: Fetch data
+        run: python scripts/fetch_data.py
+        continue-on-error: true
+
+      - name: Detect signals
+        run: python scripts/detect_signal.py
+
+      - name: Send email
+        if: hashFiles('data/signals.txt') != ''
+        run: |
+          python - <<EOF
+          from scripts.send_email import send
+          body = open("data/signals.txt").read()
+          send("Daily Stock Signal Report", body)
+          EOF
+
+      - run: git status

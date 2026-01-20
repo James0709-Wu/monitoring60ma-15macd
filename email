@@ -1,0 +1,17 @@
+import smtplib
+from email.mime.text import MIMEText
+import yaml
+
+cfg = yaml.safe_load(open("config/email.yaml"))
+
+def send(subject, body):
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = cfg["sender"]
+    msg["To"] = cfg["receiver"]
+
+    server = smtplib.SMTP(cfg["smtp_server"], cfg["smtp_port"])
+    server.starttls()
+    server.login(cfg["sender"], cfg["password"])
+    server.send_message(msg)
+    server.quit()

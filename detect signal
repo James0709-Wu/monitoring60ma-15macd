@@ -1,0 +1,54 @@
+import os
+import json
+import pandas as pd
+from scripts.indicators import compute_indicators
+
+STATE_FILE = "data/state.json"
+
+if os.path.exists(STATE_FILE):
+    state = json.load(open(STATE_FILE))
+else:
+    state = {}
+
+signals = []
+
+universe = pd.read_csv("data/universe.csv")
+
+for _, row in universe.iterrows():
+    symbol = row["symbol"]
+    cap = row["market_cap"]
+
+    path = f"data/daily_prices/{symbol}.csv"
+    if not os.path.exists(path):
+        continue
+
+    df = pd.read_csv(path)
+    if len(df) < 70:
+        continue
+
+    df = compute_indicators(df)
+
+    today = df.iloc[-1]
+    yesterday = df.iloc[-2]
+
+    cond_ma = yesterday["Close"] < yesterday["MA60"] and today["Close"] > today["MA60"]
+    cond_macd = yesterday["MACD"] < 0 and today["MACD"] > 0
+
+    if cond_ma and cond_macd:
+        if state.get(symbol) != today["Date"]:
+            signals.append((symbol, cap))
+            state[symbol] = today["Date"]
+
+json.dump(state, open(STATE_FILE, "w"))
+
+signals.sort(key=lambda x: x[1], reverse=True)
+
+large_caps = [s for s in signals if s[1] >= 100_000_000_000]
+
+with open("data/signals.txt", "w") as f:
+    for s in signals:
+        f.write(f"{s[0]} | {s[1]:,.0f}\n")
+
+with open("data/signals_large.txt", "w") as f:
+    for s in large_caps:
+        f.write(f"{s[0]} | {s[1]:,.0f}\n")

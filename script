@@ -1,0 +1,27 @@
+import yfinance as yf
+import pandas as pd
+import time
+import os
+
+os.makedirs("data/daily_prices", exist_ok=True)
+
+universe = pd.read_csv("data/universe.csv")
+
+for _, row in universe.iterrows():
+    symbol = row["symbol"]
+    try:
+        print(f"[FETCH] {symbol}")
+        df = yf.download(
+            symbol,
+            period="6mo",
+            interval="1d",
+            threads=False,
+            progress=False
+        )
+        if df is None or df.empty:
+            continue
+        df.to_csv(f"data/daily_prices/{symbol}.csv")
+        time.sleep(12)
+    except Exception as e:
+        print(f"[SKIP] {symbol}: {e}")
+        time.sleep(20)

@@ -1,0 +1,5 @@
+smtp_server: smtp.gmail.com
+smtp_port: 587
+sender: ${{ secrets.EMAIL_SENDER }}
+password: ${{ secrets.EMAIL_PASSWORD }}
+receiver: wurunze0709@gmail.com
